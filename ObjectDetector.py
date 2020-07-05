@@ -23,12 +23,14 @@ classNames = {0: 'background',
 
 class Detector:
     def __init__(self):
+      #dọc file model lên
         global cvNet
         cvNet = cv.dnn.readNetFromTensorflow('model/frozen_inference_graph.pb',
                                              'model/ssd_mobilenet_v1_coco_2017_11_17.pbtxt')
 
     def detectObject(self, imName):
-        img = cv.cvtColor(numpy.array(imName), cv.COLOR_BGR2RGB)
+        # xử lý ảnh input sao cho giống ảnh input đầu vào của model
+        img = cv.cvtColor(numpy.array(imName), cv.COLOR_BGR2RGB) #chuyển ảnh (BFR)->(RGB)
         cvNet.setInput(cv.dnn.blobFromImage(img, 0.007843, (300, 300), (127.5, 127.5, 127.5), swapRB=True, crop=False))
         detections = cvNet.forward()
         cols = img.shape[1]
@@ -38,7 +40,8 @@ class Detector:
             confidence = detections[0, 0, i, 2]
             if confidence > 0.5:
                 class_id = int(detections[0, 0, i, 1])
-
+                
+                # vẽ bouding box
                 xLeftBottom = int(detections[0, 0, i, 3] * cols)
                 yLeftBottom = int(detections[0, 0, i, 4] * rows)
                 xRightTop = int(detections[0, 0, i, 5] * cols)
@@ -46,11 +49,12 @@ class Detector:
 
                 cv.rectangle(img, (xLeftBottom, yLeftBottom), (xRightTop, yRightTop),
                              (0, 0, 255))
+                # put text vào label (bouding box) của vật thể 
                 if class_id in classNames:
                     label = classNames[class_id] + ": " + str(confidence)
                     labelSize, baseLine = cv.getTextSize(label, cv.FONT_HERSHEY_SIMPLEX, 0.5, 1)
                     yLeftBottom = max(yLeftBottom, labelSize[1])
                     cv.putText(img, label, (xLeftBottom+5, yLeftBottom), cv.FONT_HERSHEY_SIMPLEX, 0.5, (255,255,255))
 
-        img = cv.imencode('.jpg', img)[1].tobytes()
+        img = cv.imencode('.jpg', img)[1].tobytes() # Mã hóa một hình ảnh vào bộ nhớ đệm. vì đang xử lý trên html 
         return img
